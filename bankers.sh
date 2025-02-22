@@ -17,8 +17,15 @@ new_length=0
 #Get inputs for process matrix
 for ((i = 0; i < process_amount; i++)); do
 	for ((j = 0; j < resource_amount; j++)); do
-		read -p "Enter Max Resource Request R$j for Process P$i: " resource_request
-		process_matrix[$i,$j]=$resource_request
+        while true; do
+            read -p "Enter Max resource request R$j for Process P$i: " resource_req
+            if [[ "$resource_req" =~ ^[0-9]+$ && "$resource_req" -ge 0 ]]; then
+                process_matrix[$i,$j]=$resource_req
+                break
+            else
+                echo "Invalid input!"
+            fi
+        done
 	done
 done
 
@@ -44,8 +51,15 @@ echo
 #Get inputs for allocation atrix
 for ((i = 0; i < process_amount; i++)); do
 	for ((j = 0; j < resource_amount; j++)); do
-		read -p "Enter allocated resource R$j for Process P$i: " allocated_resource
-		allocation_matrix[$i,$j]=$allocated_resource
+        while true; do
+            read -p "Enter allocated resource R$j for Process P$i: " allocated_resource
+            if [[ "$allocated_resource" =~ ^[0-9]+$ && "$allocated_resource" -ge 0 ]]; then 
+                allocation_matrix[$i,$j]=$allocated_resource
+                break
+            else
+                echo "Invalid input"
+            fi
+        done
 	done
 done
 
@@ -70,12 +84,19 @@ echo
 
 #Get inputs for available resources
 for ((i = 0; i < resource_amount; i++)); do
-	read -p "Enter available resource R$i: " available_resource
-	available[$i]=$available_resource
+	while true; do
+		read -p "Enter available resource R$i: " available_resource
+		if [[ "$available_resource" =~ ^[0-9]+$ && "$available_resource" -ge 0 ]]; then
+			available[$i]=$available_resource
+			break
+		else 
+			echo "Invalid input!"
+		fi
+	done
 done
 
 #Print available resources
-echo "Available array: ${available[@]}"
+echo "Available resources: ${available[@]}"
 echo
 
 #Function to check if system is safe
@@ -99,7 +120,8 @@ function is_system_safe() {
 
 			passed=true
 			for ((j = 0; j < resource_amount; j++)); do
-				need=$(( ${process_matrix[$i,$j]} - ${allocation_matrix[$i,$j]} ))
+                #:-0 replaces missing values with 0 and prevents errors
+				need=$(( ${process_matrix[$i,$j]:-0} - ${allocation_matrix[$i,$j]:-0} ))
 				if [[ ${temp_available[$j]} -lt $need ]]; then
 					passed=false
 					break
@@ -127,32 +149,41 @@ function is_system_safe() {
 
 #Check if system is safe
 if is_system_safe; then
-	echo "System is in a safe state, safe sequence: ${sequence[@]}"
+	echo "System is in a safe state safe sequence"
+	echo "Safe sequence: ${sequence[@]}"
 
     read -p "Would you like to run a process again? (y/n): " continue
 
     if [[ $continue == "y" ]]; then
         read -p "Select a process to run (P0 - P$((process_amount-1))): " selected_process
 
-        if [[ $selected_process -lt 0 || $selected_process -ge $process_amount ]]; then
+        if [[ -z "$selected_process" || "$selected_process" -lt 0 || $selected_process -ge $process_amount ]]; then
             echo "Invalid input!"
             exit 1
         fi
 
         #Get new max resource requests
-        echo "Enter new max resource requests for process (P$selected_process):"
+        echo "Enter new max resource requests for process P$selected_process:"
         for ((j = 0; j < resource_amount; j++)); do
-            read -p "New resource request R$j for process (P$selected_process): " new_max_request
-            process_matrix[$selected_process,$j]=$new_max_request
+			while true; do
+				read -p "New resource request R$j for process P$selected_process: " new_max_req
+				if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
+					process_matrix[$selected_process,$j]=$new_max_req
+					break
+				else 
+					echo "Invalid input!"
+				fi
+			done
         done
 
         #Check if system is safe
         if is_system_safe; then
-            echo "System is in a safe state, safe sequence: ${sequence[@]} "
+            echo "System is in a safe state"
+			echo "Safe sequence: ${sequence[@]}"
         else
-            echo "System not in a safe state"
+            echo "System not in a safe state "
         fi
     fi
 else
-	echo "System not in a safe state "
+	echo "System not in a safe state"
 fi
