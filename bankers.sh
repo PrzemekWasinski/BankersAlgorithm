@@ -1,14 +1,28 @@
 #!/bin/bash
 
-#Get inputs for processes and resources
-read -p "Enter number of processes: " process_amount
-read -p "Enter number of resource types: " resource_amount
+# Get inputs for processes and resources
+process_amount=0
+resource_amount=0
 
-#Matrixes for max resource requests and current allocation
+while true; do
+    read -p "Enter number of processes: " process_input
+    read -p "Enter number of resource types: " resource_input
+
+    if [[ "$process_input" =~ ^[0-9]+$ && "$process_input" -ge 0 && "$resource_input" =~ ^[0-9]+$ && "$resource_input" -ge 0 ]]; then
+        process_amount=$process_input
+        resource_amount=$resource_input
+        break
+    else
+        echo "Invalid input!"
+    fi
+done
+
+echo
+
 declare -A process_matrix
 declare -A allocation_matrix
 
-#Available resources and sequence
+# Available resources and sequence
 available=()
 sequence=()
 sequence_length=0
@@ -29,7 +43,7 @@ for ((i = 0; i < process_amount; i++)); do
 	done
 done
 
-#Print Process Matrix
+#Print process matrix
 echo
 echo "Processes matrix:"
 echo -n "    "
@@ -48,7 +62,7 @@ for ((i = 0; i < process_amount; i++)); do
 done
 echo
 
-#Get inputs for allocation atrix
+#Get inputs for allocation matrix
 for ((i = 0; i < process_amount; i++)); do
 	for ((j = 0; j < resource_amount; j++)); do
         while true; do
@@ -63,7 +77,7 @@ for ((i = 0; i < process_amount; i++)); do
 	done
 done
 
-#Print allocation matrix
+#Print allocation atrix
 echo
 echo "Allocation Matrix:"
 echo -n "    "
@@ -99,12 +113,12 @@ done
 echo "Available resources: ${available[@]}"
 echo
 
-#Function to check if system is safe
+#Function to check if system has enough resources
 function is_system_safe() {
 	sequence=()
 	sequence_length=0
-	local temp_available=("${available[@]}")
-	local finished=()
+	temp_available=("${available[@]}") 
+	finished=()
 	
 	for ((i = 0; i < process_amount; i++)); do
 		finished[$i]=false
@@ -120,8 +134,8 @@ function is_system_safe() {
 
 			passed=true
 			for ((j = 0; j < resource_amount; j++)); do
-                #:-0 replaces missing values with 0 and prevents errors
-				need=$(( ${process_matrix[$i,$j]:-0} - ${allocation_matrix[$i,$j]:-0} ))
+				need=$(( ${process_matrix[$i,$j]} - ${allocation_matrix[$i,$j]} ))
+
 				if [[ ${temp_available[$j]} -lt $need ]]; then
 					passed=false
 					break
@@ -147,43 +161,56 @@ function is_system_safe() {
 	return 0  
 }
 
+
 #Check if system is safe
 if is_system_safe; then
-	echo "System is in a safe state safe sequence"
+	echo "System is in safe state"
 	echo "Safe sequence: ${sequence[@]}"
 
-    read -p "Would you like to run a process again? (y/n): " continue
+	while true; do
+		read -p "Would you like to run a process again? (y/n): " continue
 
-    if [[ $continue == "y" ]]; then
-        read -p "Select a process to run (P0 - P$((process_amount-1))): " selected_process
+		if [[ $continue == "y" || $continue == "n" ]]; then
+			if [[ $continue == "y" ]]; then
+				selected_process=0
+				while true; do
+					read -p "Select a process to run P0 - P$((process_amount-1)): " rerun_input
 
-        if [[ -z "$selected_process" || "$selected_process" -lt 0 || $selected_process -ge $process_amount ]]; then
-            echo "Invalid input!"
-            exit 1
-        fi
+					if [[ "$rerun_input" =~ ^[0-9]+$ && "$rerun_input" -ge 0 && $rerun_input -le $((process_amount-1)) ]]; then
+						selected_process=$rerun_input
+						break
+					else
+						echo "Invalid input!"
+					fi
+				done
 
-        #Get new max resource requests
-        echo "Enter new max resource requests for process P$selected_process:"
-        for ((j = 0; j < resource_amount; j++)); do
-			while true; do
-				read -p "New resource request R$j for process P$selected_process: " new_max_req
-				if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
-					process_matrix[$selected_process,$j]=$new_max_req
-					break
-				else 
-					echo "Invalid input!"
+				#Get new max resource requests
+				echo "Enter new max resource requests for process P$selected_process:"
+				for ((j = 0; j < resource_amount; j++)); do
+					while true; do
+						read -p "New resource request R$j for process P$selected_process: " new_max_req
+						if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
+							process_matrix[$selected_process,$j]=$new_max_req
+							break
+						else 
+							echo "Invalid input!"
+						fi
+					done
+				done
+
+				#Check if system is safe with new resource requests
+				if is_system_safe; then
+					echo "System is in safe state"
+					echo "Safe sequence: ${sequence[@]}"
+				else
+					echo "System not in safe state"
 				fi
-			done
-        done
-
-        #Check if system is safe
-        if is_system_safe; then
-            echo "System is in a safe state"
-			echo "Safe sequence: ${sequence[@]}"
-        else
-            echo "System not in a safe state "
-        fi
-    fi
+			fi
+			break
+		else
+			echo "Invalid input!"
+		fi
+	done
 else
-	echo "System not in a safe state"
+	echo "System not in safe state"
 fi
