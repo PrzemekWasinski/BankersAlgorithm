@@ -114,7 +114,7 @@ echo "Available resources: ${available[@]}"
 echo
 
 #Function to check if system has enough resources
-function is_system_safe() {
+function is_safe() {
 	sequence=()
 	sequence_length=0
 	temp_available=("${available[@]}") 
@@ -125,7 +125,7 @@ function is_system_safe() {
 	done
 
 	while [[ $sequence_length -lt $process_amount ]]; do
-		progress_made=false
+		progress=false
 
 		for ((i = 0; i < process_amount; i++)); do
 			if [[ ${finished[$i]} == true ]]; then
@@ -149,11 +149,11 @@ function is_system_safe() {
 					temp_available[$j]=$(( temp_available[$j] + allocation_matrix[$i,$j] ))
 				done
 				finished[$i]=true
-				progress_made=true
+				progress=true
 			fi
 		done
 
-		if [[ $progress_made == false ]]; then
+		if [[ $progress == false ]]; then
 			return 1 
 		fi
 	done
@@ -162,8 +162,8 @@ function is_system_safe() {
 }
 
 
-#Check if system is safe
-if is_system_safe; then
+#Check if system is in safe state
+if is_safe; then
 	echo "System is in safe state"
 	echo "Safe sequence: ${sequence[@]}"
 
@@ -185,7 +185,7 @@ if is_system_safe; then
 				done
 
 				#Get new max resource requests
-				echo "Enter new max resource requests for process P$selected_process:"
+				echo "Enter new max resource requests for selected process P$selected_process"
 				for ((j = 0; j < resource_amount; j++)); do
 					while true; do
 						read -p "New resource request R$j for process P$selected_process: " new_max_req
@@ -199,11 +199,12 @@ if is_system_safe; then
 				done
 
 				#Check if system is safe with new resource requests
-				if is_system_safe; then
+				if is_safe; then
 					echo "System is in safe state"
 					echo "Safe sequence: ${sequence[@]}"
 				else
-					echo "System not in safe state"
+					echo "System not a in safe state"
+					break
 				fi
 			elif [[ $continue == "n" ]]; then
 				echo "See you later"
@@ -214,5 +215,5 @@ if is_system_safe; then
 		fi
 	done
 else
-	echo "System not in safe state"
+	echo "System not a in safe state"
 fi
