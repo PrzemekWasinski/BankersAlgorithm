@@ -168,8 +168,15 @@ if is_safe; then
 				safe=true
 
 				for ((i = 0; i < resource_amount; i++)); do
-					read -p "Enter max resource request R$i for the new process: " new_max_req
-					new_process[$i]=$new_max_req
+					while true; do
+						read -p "Enter max resource request R$i for the new process: " new_max_req
+						if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
+							new_process[$i]=$new_max_req
+							break
+						else
+							echo "Invalid input!"
+						fi
+					done
 				done
 
 				for ((i = 0; i < resource_amount; i++)); do
