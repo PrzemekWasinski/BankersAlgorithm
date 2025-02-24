@@ -205,8 +205,10 @@ if is_system_safe; then
 				else
 					echo "System not in safe state"
 				fi
+			elif [[ $continue == "n" ]]; then
+				echo "See you later"
+				break
 			fi
-			break
 		else
 			echo "Invalid input!"
 		fi
