@@ -111,50 +111,45 @@ for ((i = 0; i < process_amount; i++)); do
 done
 echo
 
-#Function to check if system has enough resources
-is_safe() {
-    sequence=()
-    sequence_length=0
+sequence_length=0
+safe=true
 
-    while [[ $sequence_length -lt $process_amount ]]; do
-        progress=false
+while [[ $sequence_length -lt $process_amount ]]; do
+	progress=false
 
-        for ((i = 0; i < process_amount; i++)); do
-            if [[ " ${sequence[@]} " =~ "P$i" ]]; then
-                continue
-            fi
+	for ((i = 0; i < process_amount; i++)); do
+		if [[ " ${sequence[@]} " =~ "P$i" ]]; then
+			continue
+		fi
 
-            passed=true
-            for ((j = 0; j < resource_amount; j++)); do
-                need=$(( ${process_matrix[$i,$j]} - ${allocation_matrix[$i,$j]} ))
+		passed=true
+		for ((j = 0; j < resource_amount; j++)); do
+			need=$(( ${process_matrix[$i,$j]} - ${allocation_matrix[$i,$j]} ))
+			if [[ ${available[$j]} -lt $need ]]; then
+				passed=false
+				break
+			fi
+		done
 
-                if [[ ${available[$j]} -lt $need ]]; then
-                    passed=false
-                    break
-                fi
-            done
+		if [[ $passed == true ]]; then
+			sequence+=("P$i")
+			sequence_length=$((sequence_length+1))
+			for ((j = 0; j < resource_amount; j++)); do
+				available[$j]=$(( available[$j] + allocation_matrix[$i,$j] ))
+				allocation_matrix[$i,$j]=0
+			done
+			progress=true
+		fi
+	done
 
-            if [[ $passed == true ]]; then
-                sequence+=("P$i")
-                sequence_length=$((sequence_length+1))
-                for ((j = 0; j < resource_amount; j++)); do
-                    available[$j]=$(( available[$j] + allocation_matrix[$i,$j] ))
-					allocation_matrix[$i,$j]=0
-                done
-                progress=true
-            fi
-        done
-
-        if [[ $progress == false ]]; then
-            return 1
-        fi
-    done
-
-    return 0
-}
+	if [[ $progress == false ]]; then
+		safe=false
+		break
+	fi
+done
 
 #Check if system is in safe state
-if is_safe; then
+if [[ $safe == true ]]; then
 	echo "System is in safe state"
 	echo "Safe sequence: ${sequence[@]}"
 	echo
