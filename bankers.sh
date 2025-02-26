@@ -1,6 +1,6 @@
- #!/bin/bash
+#!/bin/bash
 
-# Get inputs for processes and resources and validate them
+#Get inputs for processes and resources and validate them
 process_amount=0
 resource_amount=0
 
@@ -19,13 +19,13 @@ done
 
 echo
 
-# Define process request matrix, allocation matrix, available resources, and safe sequence
+#Define process request matrix, allocation matrix, available resources and safe sequence
 declare -A process_matrix
 declare -A allocation_matrix
 available=()
 sequence=()
 
-# Get inputs for available resources and validate them
+#Get inputs for available resources and validate them
 for ((i = 0; i < resource_amount; i++)); do
 	while true; do
 		read -p "Enter available resource R$i: " available_resource
@@ -38,12 +38,20 @@ for ((i = 0; i < resource_amount; i++)); do
 	done
 done
 
-# Print available resources
+#Print available resources
 echo
-echo "Available resources: ${available[@]}"
+echo "Available resources:"
+for ((i = 0; i < resource_amount; i++)); do
+    echo -n "R$i "
+done
+echo
+for ((i = 0; i < resource_amount; i++)); do
+    echo -n "${available[$i]}  "
+done
+echo
 echo
 
-# Get inputs for process matrix and validate them
+#Get inputs for process matrix and validate them
 for ((i = 0; i < process_amount; i++)); do
 	for ((j = 0; j < resource_amount; j++)); do
         while true; do
@@ -59,7 +67,7 @@ for ((i = 0; i < process_amount; i++)); do
 	echo
 done
 
-# Print process matrix
+#Print process matrix
 echo "Processes matrix:"
 echo -n "    "
 for ((i = 0; i < resource_amount; i++)); do
@@ -76,7 +84,7 @@ for ((i = 0; i < process_amount; i++)); do
 done
 echo
 
-# Get inputs for allocation matrix and validate them
+#Get inputs for allocation matrix and validate them
 for ((i = 0; i < process_amount; i++)); do
 	for ((j = 0; j < resource_amount; j++)); do
         while true; do
@@ -92,7 +100,7 @@ for ((i = 0; i < process_amount; i++)); do
 	echo
 done
 
-# Print allocation matrix
+#Print allocation atrix
 echo "Allocation Matrix:"
 echo -n "    "
 for ((i = 0; i < resource_amount; i++)); do
@@ -110,9 +118,10 @@ done
 echo
 
 check_safety() {
-	safe=true
+    safe=true
     sequence_length=0
     sequence=()
+    current_available=("${available[@]}")
 
     while [[ $sequence_length -lt $process_amount ]]; do
         progress=false
@@ -124,8 +133,11 @@ check_safety() {
 
             passed=true
             for ((j = 0; j < resource_amount; j++)); do
-                need=$(( ${process_matrix[$i,$j]} - ${allocation_matrix[$i,$j]} ))
-                if [[ ${available[$j]} -lt $need ]]; then
+                max_req=${process_matrix[$i,$j]}
+                allocated=${allocation_matrix[$i,$j]}
+                need=$(( max_req - allocated ))
+
+                if [[ ${current_available[$j]} -lt $need ]]; then
                     passed=false
                     break
                 fi
@@ -135,7 +147,7 @@ check_safety() {
                 sequence+=("P$i")
                 sequence_length=$((sequence_length+1))
                 for ((j = 0; j < resource_amount; j++)); do
-                    available[$j]=$(( available[$j] + allocation_matrix[$i,$j] ))
+                    current_available[$j]=$(( current_available[$j] + allocation_matrix[$i,$j] ))
                 done
                 progress=true
             fi
@@ -147,10 +159,10 @@ check_safety() {
         fi
     done
 
-    # Output if the system is in a safe state
     if [[ $safe == true ]]; then
-        echo "System is in safe state"
+        echo "System is in a safe state"
         echo "Safe sequence: ${sequence[@]}"
+        echo
     else
         echo "System not in a safe state"
         exit 1 
@@ -159,19 +171,19 @@ check_safety() {
 
 check_safety
 
+#Ask the user if they want to add a new process
 while true; do
     read -p "Would you like to add a new process? [Y/n]: " continue
 
     if [[ $continue == "y" || $continue == "Y" ]]; then
-        new_process=()
-        new_allocation=()
+        new_process_matrix=()
 
-        # Get max resource request and allocated resources for the new process
+        #Get max resource request and allocated resources for the new process and validate
         for ((i = 0; i < resource_amount; i++)); do
             while true; do
-                read -p "Enter max resource request R$i for the new process: " new_max_req
+                read -p "Enter max resource request R$i for new process P$process_amount: " new_max_req
                 if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
-                    new_process[$i]=$new_max_req
+                    new_process_matrix[$i]=$new_max_req
                     break
                 else
                     echo "Invalid input!"
@@ -179,25 +191,14 @@ while true; do
             done
         done
 
-        for ((i = 0; i < resource_amount; i++)); do
-            while true; do
-                read -p "Enter allocated resource R$i for the new process: " new_allocated_res
-                if [[ "$new_allocated_res" =~ ^[0-9]+$ && "$new_allocated_res" -ge 0 ]]; then
-                    new_allocation[$i]=$new_allocated_res
-                    break
-                else
-                    echo "Invalid input!"
-                fi
-            done
-        done
-
-        # Update process and allocation matrices
+        #Update process and allocation matrix
         for ((j = 0; j < resource_amount; j++)); do
-			process_matrix[$process_amount,$j]=${new_process[$j]}
-			allocation_matrix[$process_amount,$j]=${new_allocation[$j]}
+			process_matrix[$process_amount,$j]=${new_process_matrix[$j]}
+			allocation_matrix[$process_amount,$j]=0
 		done
-        process_amount=$((process_amount+1))
 
+        process_amount=$((process_amount+1))
+        echo
         check_safety
 
     elif [[ $continue == "n" || $continue == "N" ]]; then
@@ -207,3 +208,4 @@ while true; do
         echo "Invalid input!"
     fi
 done
+
