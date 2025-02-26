@@ -116,8 +116,9 @@ for ((i = 0; i < process_amount; i++)); do
 done
 echo
 
+#Function to check system safety
+safe=true
 check_safety() {
-    safe=true
     sequence_length=0
     sequence=()
     current_available=("${available[@]}")
@@ -170,41 +171,43 @@ check_safety() {
 
 check_safety
 
-#Ask the user if they want to add a new process
-while true; do
-    read -p "Would you like to add a new process? [Y/n]: " continue
+#If system is safe ask the user if they want to add a new process
+if [[ $safe == true ]]; then
+    while true; do
+        read -p "Would you like to add a new process? [Y/n]: " continue
 
-    if [[ $continue == "y" || $continue == "Y" ]]; then
-        new_process_matrix=()
+        if [[ $continue == "y" || $continue == "Y" ]]; then
+            new_process_matrix=()
 
-        #Get max resource request and allocated resources for the new process and validate
-        for ((i = 0; i < resource_amount; i++)); do
-            while true; do
-                read -p "Enter max resource request R$i for new process P$process_amount: " new_max_req
-                if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
-                    new_process_matrix[$i]=$new_max_req
-                    break
-                else
-                    echo "Invalid input!"
-                fi
+            #Get max resource request and allocated resources for the new process and validate
+            for ((i = 0; i < resource_amount; i++)); do
+                while true; do
+                    read -p "Enter max resource request R$i for new process P$process_amount: " new_max_req
+                    if [[ "$new_max_req" =~ ^[0-9]+$ && "$new_max_req" -ge 0 ]]; then
+                        new_process_matrix[$i]=$new_max_req
+                        break
+                    else
+                        echo "Invalid input!"
+                    fi
+                done
             done
-        done
 
-        #Update process and allocation matrix
-        for ((j = 0; j < resource_amount; j++)); do
-			process_matrix[$process_amount,$j]=${new_process_matrix[$j]}
-			allocation_matrix[$process_amount,$j]=0
-		done
+            #Update process and allocation matrix
+            for ((j = 0; j < resource_amount; j++)); do
+                process_matrix[$process_amount,$j]=${new_process_matrix[$j]}
+                allocation_matrix[$process_amount,$j]=0
+            done
 
-        process_amount=$((process_amount+1))
-        echo
-        check_safety
+            process_amount=$((process_amount+1))
+            echo
+            check_safety
 
-    elif [[ $continue == "n" || $continue == "N" ]]; then
-        echo "See you later!"
-        break
-    else
-        echo "Invalid input!"
-    fi
-done
+        elif [[ $continue == "n" || $continue == "N" ]]; then
+            echo "See you later!"
+            break
+        else
+            echo "Invalid input!"
+        fi
+    done
+fi
 
