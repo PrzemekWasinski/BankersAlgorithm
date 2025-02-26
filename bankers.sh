@@ -23,7 +23,6 @@ echo
 declare -A process_matrix
 declare -A allocation_matrix
 available=()
-sequence=()
 
 #Get inputs for available resources and validate them
 for ((i = 0; i < resource_amount; i++)); do
