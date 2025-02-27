@@ -89,8 +89,12 @@ for ((i = 0; i < process_amount; i++)); do
         while true; do
             read -p "Enter allocated resource R$j for Process P$i: " allocated_resource
             if [[ "$allocated_resource" =~ ^[0-9]+$ && "$allocated_resource" -ge 0 ]]; then 
-                allocation_matrix[$i,$j]=$allocated_resource
-                break
+                if [[ "$allocated_resource" -le "${process_matrix[$i,$j]}" ]]; then
+                    allocation_matrix[$i,$j]=$allocated_resource
+                    break
+                else    
+                    echo "Allocated resource cannot be higher than Max Resource Request"
+                fi
             else
                 echo "Invalid input"
             fi
@@ -210,4 +214,7 @@ if [[ $safe == true ]]; then
         fi
     done
 fi
+
+
+
 
